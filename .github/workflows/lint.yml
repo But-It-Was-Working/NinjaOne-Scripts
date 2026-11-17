@@ -30,7 +30,10 @@ jobs:
             }
           }
 
-          $results = Invoke-ScriptAnalyzer -Path Scripts, Templates -Recurse -Settings ./PSScriptAnalyzerSettings.psd1
+          # -Path takes a single path, so analyze each folder separately.
+          $results = foreach ($dir in 'Scripts', 'Templates') {
+            Invoke-ScriptAnalyzer -Path $dir -Recurse -Settings ./PSScriptAnalyzerSettings.psd1
+          }
           foreach ($r in $results) {
             $level = if ($r.Severity -eq 'Error') { 'error' } else { 'warning' }
             Write-Output "::$level file=$($r.ScriptPath),line=$($r.Line)::[$($r.RuleName)] $($r.Message)"

@@ -1,0 +1,41 @@
+name: PSScriptAnalyzer
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse and analyze PowerShell
+        shell: pwsh
+        run: |
+          Install-Module PSScriptAnalyzer -Force -Scope CurrentUser -SkipPublisherCheck
+          $files = Get-ChildItem -Path Scripts, Templates -Recurse -Include *.ps1
+          $failed = $false
+
+          foreach ($f in $files) {
+            $tokens = $null; $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($f.FullName, [ref]$tokens, [ref]$errors) | Out-Null
+            foreach ($e in $errors) {
+              Write-Output "::error file=$($f.FullName),line=$($e.Extent.StartLineNumber)::$($e.Message)"
+              $failed = $true
+            }
+          }
+
+          $results = Invoke-ScriptAnalyzer -Path Scripts, Templates -Recurse -Settings ./PSScriptAnalyzerSettings.psd1
+          foreach ($r in $results) {
+            $level = if ($r.Severity -eq 'Error') { 'error' } else { 'warning' }
+            Write-Output "::$level file=$($r.ScriptPath),line=$($r.Line)::[$($r.RuleName)] $($r.Message)"
+            if ($r.Severity -eq 'Error') { $failed = $true }
+          }
+
+          if ($failed) { exit 1 }
+          Write-Output "Checked $($files.Count) script(s): no errors."

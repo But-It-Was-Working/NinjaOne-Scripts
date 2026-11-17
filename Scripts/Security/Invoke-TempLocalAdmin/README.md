@@ -50,6 +50,14 @@ Optional: create a device custom field **`tempAdminStatus`** (Text, Automation: 
 - State: `C:\ProgramData\TempLocalAdmin\grants.json`
 - Exit `0` = success, `1` = failure, `2` = user was already an admin
 
+## Tested on
+
+| Windows | Join type | Run As | User given as | Result |
+|---|---|---|---|---|
+| Windows 11 | Domain-joined (AD) | System | AD username in `targetUser` | Works: grant, install via Run as administrator, automatic revoke |
+
+Not tested yet: AzureAD/Entra-joined devices, local-only accounts. Please open an issue or PR with your results.
+
 ## Limits to know
 
 - **An admin is an admin.** During the window the user could, in theory, delete the task or add another account. Set up a NinjaOne condition or a daily script that alerts on any unexpected members of local Administrators.
